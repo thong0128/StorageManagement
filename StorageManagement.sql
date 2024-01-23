@@ -248,15 +248,134 @@ join materials as m on grn_d.Material_Id = m.id
 where m.Unit = 'Set';
 select * from vw_CTPNHAP_VT_loc;
 
--- Câu 7. Tạo view có tên vw_CTPXUAT bao gồm các thông tin sau: 
--- số phiếu xuất hàng, mã vật tư, số lượng xuất, đơn giá xuất, thành tiền xuất.
-
+-- Câu 7. 
 create view vw_CTPXUAT as
 select 
 gdn.GDN_Code as GDN_Code,
 m.Material_Code as Material_Code,
 gdn_d.Quantity as Quantity,
 gdn_d.Price as Price,
-(Quantity * Price) as Cost
+(gdn_d.Quantity * gdn_d.Price) as Cost
 from materials as m
-join gdn_detail as gdn_d on m.id gdn_d.
+join gdn_detail as gdn_d on m.id = gdn_d.Material_Id
+join goods_despatched_note as gdn on gdn.id = gdn_d.GDN_Id;
+select * from vw_CTPXUAT;
+
+-- Câu 8.
+create view vw_CTPXUAT_VT as
+select 
+gdn.GDN_Code as GDN_Code,
+m.Material_Code as Material_Code,
+m.name as Material_name,
+gdn_d.Quantity as Quantity,
+gdn_d.Price as Price
+from materials as m
+join gdn_detail as gdn_d on m.id = gdn_d.Material_Id
+join goods_despatched_note as gdn on gdn.id = gdn_d.GDN_Id;
+select * from vw_CTPXUAT_VT;
+
+-- Câu 9. 
+create view vw_CTPXUAT_VT_PX as
+select 
+gdn.GDN_Code as GDN_Code,
+gdn.Customer_Name as Customer_Name,
+m.Material_Code as Material_Code,
+m.name as Material_name,
+gdn_d.Quantity as Quantity,
+gdn_d.Price as Price
+from materials as m
+join gdn_detail as gdn_d on m.id = gdn_d.Material_Id
+join goods_despatched_note as gdn on gdn.id = gdn_d.GDN_Id;
+select * from vw_CTPXUAT_VT_PX;
+
+-- Stored procedure
+
+-- Câu 1. 
+DELIMITER //
+drop procedure if exists `FinalQuantity`//
+CREATE PROCEDURE FinalQuantity(
+    MCode varchar(255)
+)
+BEGIN
+	select 
+	TotalReceive - TotalDispatch as FinalQuantity
+    from
+    (select 
+    sum(grn_d.Quantity) as TotalReceive,
+    sum(gdn_d.Quantity) as TotalDispatch
+    from materials as m 
+    join gdn_detail as gdn_d on m.id = gdn_d.Material_Id
+    join grn_detail as grn_d on m.id = grn_d.Material_Id
+    where m.Material_Code = MCode)temp;
+    
+END //
+DELIMITER ;
+call FinalQuantity('cmk2xal6wl');
+
+-- Câu 2. Tạo SP cho biết tổng tiền xuất của vật tư với mã vật tư là tham số vào, out là tổng tiền xuất
+DELIMITER //
+drop procedure if exists `TotalExportMoney`//
+CREATE PROCEDURE TotalExportMoney(
+   in MCode varchar(255),
+   out TotalExportMoney int
+)
+BEGIN
+    select 
+    sum(gdn_d.Quantity * gdn_d.Price) into TotalExportMoney
+    from grn_detail as gdn_d
+    join materials as m on gdn_d.Material_Id = m.id
+    where m.Material_Code = MCode;
+END //
+DELIMITER ;
+call TotalExportMoney('cmk2xal6wl', @total);
+select @total;
+
+-- Câu 3. 
+DELIMITER //
+drop procedure if exists `TotalQuantityByOrderCode`//
+CREATE PROCEDURE TotalQuantityByOrderCode(
+	OCode varchar(255)
+)
+BEGIN
+    select 
+    sum(od.Quantity) as TotalQuantity
+    from order_detail as od
+    join orders as o on od.Order_Id = o.id
+    where o.Order_Code = OCode;
+END //
+DELIMITER ;
+call TotalQuantityByOrderCode('MP2WUE2XjV');
+
+-- Câu 4.
+DELIMITER //
+drop procedure if exists `AddOrder`//
+CREATE PROCEDURE AddOrder(
+	OCode varchar(255),
+    ODate date,
+    SId int
+)
+BEGIN
+    insert into orders
+    (Order_Code, Order_Date, Supplier_Id)
+    values
+    (OCode, ODate, Sid);
+END //
+DELIMITER ;
+call AddOrder('asdfasdf','2024-01-01',3);
+
+-- Câu 5. Tạo SP dùng để thêm một chi tiết đơn đặt hàng.
+DELIMITER //
+drop procedure if exists `AddOrderDetail`//
+CREATE PROCEDURE AddOrderDetail(
+	OId int,
+    MId int,
+    Quantity int
+)
+BEGIN
+    insert into order_detail
+    (Order_Id, Material_Id, Quantity)
+    values
+    (OId, MId, Quantity);
+END //
+DELIMITER ;
+call AddOrderDetail(2,4,500);
