@@ -312,7 +312,7 @@ END //
 DELIMITER ;
 call FinalQuantity('cmk2xal6wl');
 
--- Câu 2. Tạo SP cho biết tổng tiền xuất của vật tư với mã vật tư là tham số vào, out là tổng tiền xuất
+-- Câu 2. 
 DELIMITER //
 drop procedure if exists `TotalExportMoney`//
 CREATE PROCEDURE TotalExportMoney(
@@ -322,7 +322,7 @@ CREATE PROCEDURE TotalExportMoney(
 BEGIN
     select 
     sum(gdn_d.Quantity * gdn_d.Price) into TotalExportMoney
-    from grn_detail as gdn_d
+    from gdn_detail as gdn_d
     join materials as m on gdn_d.Material_Id = m.id
     where m.Material_Code = MCode;
 END //
@@ -363,7 +363,7 @@ END //
 DELIMITER ;
 call AddOrder('asdfasdf','2024-01-01',3);
 
--- Câu 5. Tạo SP dùng để thêm một chi tiết đơn đặt hàng.
+-- Câu 5. 
 DELIMITER //
 drop procedure if exists `AddOrderDetail`//
 CREATE PROCEDURE AddOrderDetail(
